@@ -1,5 +1,5 @@
 import { DataTable } from "@/components/eventos/data-table";
-import { LoaderFunctionArgs } from "@remix-run/node";
+import { LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { json, useLoaderData, useRevalidator } from "@remix-run/react";
 import { columns } from "./columns";
 import {
@@ -25,15 +25,32 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { api_url } from "@/app/root";
 
-export async function loader({ params }: LoaderFunctionArgs) {
-  const res = await fetch(`http://localhost:3333/api/events/${params.id}`);
-  return json({ data: await res.json(), paramId: Number(params.id) });
+export async function loader({ params, request }: LoaderFunctionArgs) {
+  const cookieHeader = request.headers.get("Cookie");
+
+  const api = process.env.API_URL
+    ? process.env.API_URL
+    : "http://localhost:3333";
+
+  if (!cookieHeader) return redirect("/login");
+
+  const res = await fetch(`${api}/api/events/${params.id}`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      Cookie: cookieHeader,
+    },
+  });
+  return json({
+    data: await res.json(),
+    paramId: Number(params.id),
+    api,
+  });
 }
 
 export default function Eventos() {
-  const { data, paramId } = useLoaderData<typeof loader>();
+  const { data, paramId, api } = useLoaderData<typeof loader>();
   const revalidator = useRevalidator();
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -55,16 +72,14 @@ export default function Eventos() {
       return;
     }
 
-    const response = await fetch(
-      `http://localhost:3333/api/events/classes/new-class`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ classInfos: data }),
+    const response = await fetch(`${api}/api/events/classes/new-class`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+      credentials: "include",
+      body: JSON.stringify({ classInfos: data }),
+    });
 
     if (!response.ok) {
       toast.error("Erro ao criar a turma");

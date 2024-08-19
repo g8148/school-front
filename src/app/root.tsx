@@ -1,28 +1,14 @@
 import {
-  json,
   Links,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
-  useLoaderData,
 } from "@remix-run/react";
 import "./tailwind.css";
-import NavBar from "@/components/NavBar";
 import { Toaster } from "sonner";
 
-export const api_url = process.env.API_URL;
-
-export async function loader() {
-  return json({
-    ENV: {
-      API_URL: process.env.API_URL,
-    },
-  });
-}
-
 export function Layout({ children }: { children: React.ReactNode }) {
-  const data = useLoaderData<typeof loader>();
   return (
     <html lang="en">
       <head>
@@ -32,16 +18,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        <main className="flex h-screen bg-gradient-to-r from-indigo-100 to-violet-100">
-          {children}
-        </main>
+        {children}
         <Toaster richColors />
         <ScrollRestoration />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.ENV = ${JSON.stringify(data.ENV)}`,
-          }}
-        />
+
         <Scripts />
       </body>
     </html>
@@ -51,7 +31,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <>
-      <NavBar />
       <Outlet />
     </>
   );

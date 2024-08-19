@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { z } from "zod";
-import { useRevalidator } from "@remix-run/react";
+import { useLoaderData, useRevalidator } from "@remix-run/react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,7 +40,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { api_url } from "@/app/root";
+import { LoaderFunctionArgs, json } from "@remix-run/node";
 
 export const Payment = z.object({
   id: z.number(),
@@ -83,6 +83,7 @@ export const columns: ColumnDef<z.infer<typeof Payment>>[] = [
       const revalidator = useRevalidator();
       const [openAlert, setOpenAlert] = useState(false);
       const [open, setOpen] = useState(false);
+      const { api } = useLoaderData() as { api: string };
 
       const formSchema = z.object({
         className: z
@@ -118,20 +119,18 @@ export const columns: ColumnDef<z.infer<typeof Payment>>[] = [
 
         setOpen(false);
 
-        const response = await fetch(
-          `http://localhost:3333/api/events/classes/${item.id}`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              className: values.className ? values.className : item.className,
-              totalEntries: values.totalEntries,
-              soldEntries: values.soldEntries,
-            }),
+        const response = await fetch(`${api}/api/events/classes/${item.id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+          credentials: "include",
+          body: JSON.stringify({
+            className: values.className ? values.className : item.className,
+            totalEntries: values.totalEntries,
+            soldEntries: values.soldEntries,
+          }),
+        });
 
         if (!response.ok) {
           const errorMessage = await response.text();
@@ -145,12 +144,10 @@ export const columns: ColumnDef<z.infer<typeof Payment>>[] = [
       }
 
       async function deleteItem(id: number) {
-        const response = await fetch(
-          `http://localhost:3333/api/events/classes/${id}`,
-          {
-            method: "DELETE",
-          },
-        );
+        const response = await fetch(`${api}/api/events/classes/${id}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
 
         if (!response.ok) {
           toast.error("Erro ao deletar a turma");

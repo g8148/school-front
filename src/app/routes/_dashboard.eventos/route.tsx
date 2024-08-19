@@ -1,6 +1,11 @@
 import { DataTable } from "@/components/eventos/data-table";
 import { columns } from "./columns";
-import { json, LoaderFunction } from "@remix-run/node";
+import {
+  json,
+  LoaderFunction,
+  LoaderFunctionArgs,
+  redirect,
+} from "@remix-run/node";
 import { useLoaderData, useRevalidator } from "@remix-run/react";
 
 import {
@@ -26,15 +31,30 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { api_url } from "@/app/root";
 
-export const loader: LoaderFunction = async () => {
-  const res = await fetch(`http://localhost:3333/api/events`);
-  return json(await res.json());
+export const loader: LoaderFunction = async ({
+  request,
+}: LoaderFunctionArgs) => {
+  const cookieHeader = request.headers.get("Cookie");
+
+  const api = process.env.API_URL
+    ? process.env.API_URL
+    : "http://localhost:3333";
+
+  if (!cookieHeader) return redirect("/login");
+
+  const res = await fetch(`${api}/api/events`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      Cookie: cookieHeader,
+    },
+  });
+  return json({ data: await res.json(), api });
 };
 
 export default function Eventos() {
-  const data = useLoaderData<typeof loader>();
+  const { data, api } = useLoaderData<typeof loader>();
   const revalidator = useRevalidator();
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -50,11 +70,12 @@ export default function Eventos() {
       return;
     }
 
-    const response = await fetch(`http://localhost:3333/api/events/new-event`, {
+    const response = await fetch(`${api}/api/events/new-event`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",
       body: JSON.stringify({ eventInfos: data }),
     });
 

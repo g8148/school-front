@@ -6,8 +6,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -22,31 +20,26 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { z } from "zod";
-import { useNavigate, useRevalidator } from "@remix-run/react";
+import { useLoaderData, useNavigate, useRevalidator } from "@remix-run/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { DialogTitle } from "@radix-ui/react-dialog";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { api_url } from "@/app/root";
 
 export const Payment = z.object({
   id: z.number(),
@@ -80,6 +73,7 @@ export const columns: ColumnDef<z.infer<typeof Payment>>[] = [
       const revalidator = useRevalidator();
       const [openAlert, setOpenAlert] = useState(false);
       const [open, setOpen] = useState(false);
+      const { api } = useLoaderData() as { api: string };
 
       const formSchema = z.object({
         eventName: z.string().min(2, {
@@ -95,12 +89,10 @@ export const columns: ColumnDef<z.infer<typeof Payment>>[] = [
       });
 
       async function deleteItem() {
-        const response = await fetch(
-          `http://localhost:3333/api/events/${item.id}`,
-          {
-            method: "DELETE",
-          },
-        );
+        const response = await fetch(`${api}/api/events/${item.id}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
 
         if (!response.ok) {
           toast.error("Erro ao deletar o evento");
@@ -115,18 +107,16 @@ export const columns: ColumnDef<z.infer<typeof Payment>>[] = [
       async function updateEvent(values: z.infer<typeof formSchema>) {
         setOpen(false);
 
-        const response = await fetch(
-          `http://localhost:3333/api/events/${item.id}`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              eventName: values.eventName,
-            }),
+        const response = await fetch(`${api}/api/events/${item.id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+          credentials: "include",
+          body: JSON.stringify({
+            eventName: values.eventName,
+          }),
+        });
 
         if (!response.ok) {
           toast.error("Erro ao atualizar as informações");
